@@ -36,10 +36,6 @@ jobs:
           AWS_EC2_USER: ${{ secrets.AWS_EC2_USER }}
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $AWS_EC2_USER@$AWS_EC2_HOST << 'EOF'
-            # Stop any service that might be using port 80
-            sudo systemctl stop nginx || true
-            sudo fuser -k 80/tcp || true
-
             # Create the application directory if it does not exist
             mkdir -p /home/$AWS_EC2_USER/app
 
