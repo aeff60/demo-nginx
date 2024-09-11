@@ -24,8 +24,10 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H $AWS_EC2_HOST >> ~/.ssh/known_hosts
 
+          tar -czf app.tar.gz *
+
           # Copy source code to EC2
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r . $AWS_EC2_USER@$AWS_EC2_HOST:/home/$AWS_EC2_USER/app
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa app.tar.gz $AWS_EC2_USER@$AWS_EC2_HOST:/home/$AWS_EC2_USER/
 
       - name: Deploy on EC2
         env:
