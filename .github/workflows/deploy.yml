@@ -24,9 +24,10 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H $AWS_EC2_HOST >> ~/.ssh/known_hosts
 
+          # Archive the project files before copying
           tar -czf app.tar.gz *
 
-          # Copy source code to EC2
+          # Copy the archive to EC2
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa app.tar.gz $AWS_EC2_USER@$AWS_EC2_HOST:/home/$AWS_EC2_USER/
 
       - name: Deploy on EC2
@@ -35,11 +36,27 @@ jobs:
           AWS_EC2_USER: ${{ secrets.AWS_EC2_USER }}
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $AWS_EC2_USER@$AWS_EC2_HOST << 'EOF'
+            # Create the application directory if it does not exist
+            mkdir -p /home/$AWS_EC2_USER/app
+
+            # Move the tar file to the application directory and extract it
+            mv /home/$AWS_EC2_USER/app.tar.gz /home/$AWS_EC2_USER/app/
             cd /home/$AWS_EC2_USER/app
+            tar -xzf app.tar.gz
+            rm app.tar.gz
+
+            # Install Docker Compose if it is not installed
+            if ! command -v docker-compose &> /dev/null
+            then
+                echo "Docker Compose is not installed. Installing..."
+                sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+                sudo chmod +x /usr/local/bin/docker-compose
+                echo "Docker Compose installed successfully."
+            fi
 
             # Stop existing containers
-            docker-compose down
+            sudo docker-compose down
 
             # Build and start new containers
-            docker-compose up -d --build
+            sudo docker-compose up -d --build
           EOF
